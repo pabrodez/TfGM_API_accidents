@@ -68,6 +68,9 @@ long_lat_df <- function(list) {
 long_lat_df(long_lat)
 
 options(digits = 17)  # to display the whole length of coordinates
+df_inc$longitude <- coordinates_df$longitude  # convert to numeric
+df_inc$latitude <- coordinates_df$latitude
+                    
 df_inc$longitude <- as.double(df_inc$longitude)  # convert to numeric
 df_inc$latitude <- as.double(df_inc$latitude)
 
