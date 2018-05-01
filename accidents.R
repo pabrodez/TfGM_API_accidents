@@ -13,7 +13,7 @@ library(jsonlite); library(tidyverse); library(sf); library(stringr); library(ht
 if (!dir.exists("./requests_files")) dir.create("./requests_files")
 
 # Request
-api_key <- "b860e350e0c145d78ad0e37fa0dacaaa"
+api_key <- "your_key"
 request <- GET(
   "https://api.tfgm.com/odata/Accidents?$expand=Location&$top=100",  # check https://developer.tfgm.com/docs/services to customize the request url
   add_headers("Ocp-Apim-Subscription-Key" = api_key))
