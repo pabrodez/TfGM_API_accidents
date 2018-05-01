@@ -1,6 +1,6 @@
 # TfGM_API_accidents
 
-Simple scripts in R to retrieve, store and map Accidents or Incidents from Transport for Greater Manchester API (https://developer.tfgm.com/)
+Simple scripts in R to retrieve, store and map Accidents or Incidents from Transport for Greater Manchester API (https://developer.tfgm.com/). Sign up to get your API key.
 
 Could be combined into one single function where request parameters can be customized, and other data categories chosen (ScootLoops, Carparks, etc.).
 
