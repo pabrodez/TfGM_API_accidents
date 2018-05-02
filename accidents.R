@@ -36,6 +36,7 @@ json_list_df <- function(x) {
   for (i in 1:length(json_data)) {
    df <- bind_rows(df, json_data[[i]][["value"]])
   }
+  df <- dplyr::distinct(df, Id, .keep_all = T)
   return(df_acc <<- df)
 }
 
