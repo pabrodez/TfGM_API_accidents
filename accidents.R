@@ -3,11 +3,12 @@
 # Contains National Statistics data © Crown copyright and database right 2018
 
 # libraries
-pckgs <- c("jsonlite", "tidyverse", "sf", "stringr", "httr", "ggthemes", "devtools")
+pckgs <- c("jsonlite", "tidyverse", "sf", "stringr", "httr", "ggthemes", "devtools", "ggmap")
 if (pckgs[!(pckgs %in% installed.packages())] > 0) install.packages(pckgs[!(pckgs %in% installed.packages())])
 # devtools::install_github("tidyverse/ggplot2")
 
-library(jsonlite); library(tidyverse); library(sf); library(stringr); library(httr); library(ggthemes)
+library(jsonlite); library(tidyverse); library(sf); library(stringr); library(httr); library(ggthemes);
+library(devtools); library(ggmap)
 
 # create folder to store requests of accidents
 if (!dir.exists("./requests_files")) dir.create("./requests_files")
@@ -110,3 +111,20 @@ ggplot() +
   ) +
   coord_sf(datum = NA)
 
+# Road map
+coordinates_df$longitude <- as.numeric(coordinates_df$longitude)
+coordinates_df$latitude <- as.numeric(coordinates_df$latitude)
+road_map <- get_map(location = "Manchester", maptype = "roadmap", color = "bw")
+
+ggmap(road_map) + 
+  geom_point(data = coordinates_df, aes(x = longitude, y = latitude)) +
+  labs(title = "") +
+  theme_fivethirtyeight() +
+  theme(
+    legend.position = "right",
+    legend.direction = "vertical",
+    panel.background = element_blank(),
+    line = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank()
+  )
