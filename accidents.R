@@ -56,7 +56,7 @@ long_lat_df <- function(list) {
   long <- vector()
   lat <- vector()
 
-  for (i in 1:length(list)) {
+  for (i in seq_along(list)) {
     long <- c(long, list[[i]][[1]])
     lat <- c(lat, list[[i]][[2]])
   }
