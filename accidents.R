@@ -34,7 +34,7 @@ json_data <- lapply(req_list, function(x) fromJSON(txt = x, flatten = TRUE))  # 
 
 json_list_df <- function(x) {
   df <- data.frame()
-  for (i in 1:length(json_data)) {
+  for (i in seq_along(json_data)) {
    df <- bind_rows(df, json_data[[i]][["value"]])
   }
   df <- dplyr::distinct(df, Id, .keep_all = T)
