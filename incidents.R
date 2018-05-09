@@ -1,20 +1,18 @@
 # Script to make requests to TfGM API, store files and map locations
 # this script is intended to request Incidents data, store it and map it.
-# Contains National Statistics data © Crown copyright and database right 2018
-
+# Contains National Statistics data Â© Crown copyright and database right 2018
 # libraries
-pckgs <- c("jsonlite", "tidyverse", "sf", "stringr", "httr", "ggthemes", "devtools", "ggmap")
+pckgs <- c("jsonlite", "tidyverse", "sf", "stringr", "httr", "ggthemes", "devtools", "ggmap", "lubridate", "viridis")
 if (pckgs[!(pckgs %in% installed.packages())] > 0) {install.packages(pckgs[!(pckgs %in% installed.packages())])}
 # devtools::install_github("tidyverse/ggplot2")
 
-library(jsonlite); library(tidyverse); library(sf); library(stringr); library(httr); library(ggthemes); library(devtools); 
-library (ggmap)
+library(jsonlite); library(tidyverse); library(sf); library(stringr); library(httr); library(ggthemes); library(ggmap); library(lubridate); library(viridis)
 
 # create folder to store requests of accidents
 if (!dir.exists("./incidents")) {dir.create("./incidents")}
 
 # Request
-api_key <- "your_key_here"
+api_key <- "your_key"
 request <- GET(
   "https://api.tfgm.com/odata/Incidents?$expand=Location&$top=6000",  # check https://developer.tfgm.com/docs/services to customize the request url
   add_headers("Ocp-Apim-Subscription-Key" = api_key))
@@ -30,14 +28,15 @@ day_hour <- strftime(Sys.time(), format = "%Y-%m-%e,%H-%M")  # Create relative n
 write(req_content, file = paste0("./incidents/", day_hour, ".json"))  # Save request content
 
 req_list <- list.files("./incidents", full.names = TRUE)
-json_data <- lapply(req_list, function(x) fromJSON(txt = x, flatten = TRUE))  # to iterate over each
+json_data <- lapply(req_list, function(x) fromJSON(txt = x, flatten = TRUE))  # to iterate over each, and get back unnested data frames
 
 json_list_df <- function(x) {
   df <- data.frame()
   for (i in seq_along(json_data)) {
-    df <- bind_rows(df, json_data[[i]][["value"]])
+    df <- dplyr::bind_rows(df, json_data[[i]][["value"]])
   }
-  return(df_inc <<- df)
+  df <- dplyr::distinct(df, Id, .keep_all = T)
+  df_inc <<- df
 }
 
 json_list_df(json_data)
@@ -71,9 +70,64 @@ long_lat_df(long_lat)
 options(digits = 17)  # to display the whole length of coordinates
 df_inc$longitude <- coordinates_df$longitude  # convert to numeric
 df_inc$latitude <- coordinates_df$latitude
-                    
-df_inc$longitude <- as.double(df_inc$longitude)  # convert to numeric
+
+df_inc$longitude <- as.double(df_inc$longitude)
 df_inc$latitude <- as.double(df_inc$latitude)
+
+# Convert dates to POSIXc and plot time
+# Sys.setlocale("LC_TIME", "eng_GB")
+df_inc$StartDate <- lubridate::ymd_hms(df_inc$StartDate)
+# table(lubridate::day(df_inc$StartDate)) %>% as.tibble() %>% mutate(Var1 = as.numeric(Var1)) %>% rename(Day = Var1, Count = n)
+ggplot(df_inc) +
+  geom_freqpoly(
+    aes(x = StartDate),
+    bins = 6* 24 / 4  # 7 days, bin every 4 hours
+  ) +
+  scale_x_datetime(
+    date_labels = "%D",
+    breaks = as.POSIXct(seq(Sys.Date() - 7, Sys.Date(), "1 day")),
+    limits = as.POSIXct(c(Sys.Date() - 7, Sys.Date())),
+    expand = c(0, 0)
+  ) +
+  labs(title = "Count of incidents in the last week") +
+  theme_fivethirtyeight() +
+  theme(
+    axis.title = element_blank()
+  )
+
+# hour "heatmap"
+day_hour_df <- df_inc %>%
+  mutate(Weekday = lubridate::wday(StartDate, label = TRUE), Hour = lubridate::hour(StartDate)) %>%
+  select(Weekday, Hour) %>%
+  count(Weekday, Hour)
+
+day_hour_df$Weekday <-  ordered(day_hour_df$Weekday, levels = c("Sun", "Sat", "Fri", "Thu", "Wed", "Tue", "Mon"))
+
+  # group_by(Weekday, Hour) %>% 
+  # summarize(Count = n())
+
+# Plot to visualize basically this: table(lubridate::wday(df_inc$StartDate, label = TRUE), lubridate::hour(df_inc$StartDate), useNA = "ifany")
+ggplot(day_hour_df, aes(Hour, Weekday)) +
+  geom_tile(aes(fill = n), colour = "white") +
+  scale_fill_viridis( 
+    breaks = seq(min(day_hour_df$n), max(day_hour_df$n), by = 15),
+    limits = c(min(day_hour_df$n), max(day_hour_df$n)),
+    name = "Count"
+  ) +
+  scale_x_continuous(breaks = 00:23, labels = c(00:23)) +
+  coord_equal() +
+  labs(title = "Incidents per hour within a week",
+       subtitle = paste("Since", min(df_inc$StartDate), sep = " ")
+       ) +
+  theme_fivethirtyeight() +
+  theme(
+    panel.grid = element_blank(),
+    legend.key.height = unit(0.75, "cm"),
+    legend.position = "right",
+    legend.direction = "vertical",
+    axis.text.y = element_text(margin = margin(r = -17))
+  )
+# might use scale_fill_gradient(colours = seq_gradient_pal())
 
 # Get GM boundaries
 uk_wards <- st_read("https://opendata.arcgis.com/datasets/afcc88affe5f450e9c03970b237a7999_3.geojson", quiet = TRUE, stringsAsFactors = FALSE)
@@ -96,7 +150,7 @@ gm_wards <- st_transform(gm_wards,
 ggplot() +
   geom_sf(data = incidents_sf, aes(colour = Type)) +
   geom_sf(data = gm_wards, fill = NA, size = 0.2, colour = "black") +
-  labs(title = "") +
+  labs(title = "Incidents reported in GM roads since April 2018") +
   theme_fivethirtyeight() +
   theme(
     legend.position = "right",
@@ -116,7 +170,7 @@ road_map <- get_map(location = "Manchester", maptype = "roadmap", color = "bw")
 ggmap(road_map) + 
   geom_point(data = coordinates_df, aes(x = longitude, y = latitude)) +
   labs(title = "Incidents reported in GM roads since April 2018") +
-  theme_fivethirtyeight() +
+  theme_fivethirtyeight(base_family) +
   theme(
     legend.position = "right",
     legend.direction = "vertical",
@@ -125,3 +179,4 @@ ggmap(road_map) +
     axis.text = element_blank(),
     axis.title = element_blank()
   )
+
