@@ -101,10 +101,10 @@ day_hour_df <- df_inc %>%
   select(Weekday, Hour) %>%
   count(Weekday, Hour)
 
-day_hour_df$Weekday <-  ordered(day_hour_df$Weekday, levels = c("Sun", "Sat", "Fri", "Thu", "Wed", "Tue", "Mon"))
-
   # group_by(Weekday, Hour) %>% 
   # summarize(Count = n())
+
+day_hour_df$Weekday <-  ordered(day_hour_df$Weekday, levels = c("Sun", "Sat", "Fri", "Thu", "Wed", "Tue", "Mon"))
 
 # Plot to visualize basically this: table(lubridate::wday(df_inc$StartDate, label = TRUE), lubridate::hour(df_inc$StartDate), useNA = "ifany")
 ggplot(day_hour_df, aes(Hour, Weekday)) +
@@ -118,7 +118,7 @@ ggplot(day_hour_df, aes(Hour, Weekday)) +
   coord_equal() +
   labs(title = "Incidents per hour within a week",
        subtitle = paste("Since", min(df_inc$StartDate), sep = " ")
-       ) +
+  ) +
   theme_fivethirtyeight() +
   theme(
     panel.grid = element_blank(),
@@ -127,7 +127,7 @@ ggplot(day_hour_df, aes(Hour, Weekday)) +
     legend.direction = "vertical",
     axis.text.y = element_text(margin = margin(r = -17))
   )
-# might use scale_fill_gradient(colours = seq_gradient_pal())
+# might use scale_fill_gradientn(colours = seq_gradient_pal()) for customization
 
 # Get GM boundaries
 uk_wards <- st_read("https://opendata.arcgis.com/datasets/afcc88affe5f450e9c03970b237a7999_3.geojson", quiet = TRUE, stringsAsFactors = FALSE)
